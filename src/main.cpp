@@ -19,7 +19,39 @@ void setup() {
     Serial.println("Free bytes: " + String(FFat.freeBytes()));
 }
 
-void loop() {
+
+void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
+    Serial.printf("Listing directory: %s\r\n", dirname);
+
+    File root = fs.open(dirname);
+    if(!root){
+        Serial.println("- failed to open directory");
+        return;
+    }
+    if(!root.isDirectory()){
+        Serial.println(" - not a directory");
+        return;
+    }
+
+    File file = root.openNextFile();
+    while(file){
+        if(file.isDirectory()){
+            Serial.print("  DIR : ");
+            Serial.println(file.name());
+            if(levels){
+                listDir(fs, file.path(), levels -1);
+            }
+        } else {
+            Serial.print("  FILE: ");
+            Serial.print(file.name());
+            Serial.print("\tSIZE: ");
+            Serial.println(file.size());
+        }
+        file = root.openNextFile();
+    }
+}
+
+void open_testfiletxt() {
     File testfile = FFat.open("/testfile.txt", "r");
     if(!testfile) {
         Serial.println("Coudln't open testfile.txt!");
@@ -30,5 +62,10 @@ void loop() {
     Serial.println("Content of file (" + String(testfile.position()) + " bytes)");
     Serial.println(content);
     testfile.close();
+}
+
+void loop() {
+    listDir(FFat, "/", 3 /* max depth */);
+    open_testfiletxt();
     delay(1000);
 }
